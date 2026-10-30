@@ -53,3 +53,45 @@ jobs:
             coverage.xml
             htmlcov/
           if-no-files-found: error
+
+  deploy:
+    name: deploy
+    needs: test
+    # Only real pushes to main deploy; pull requests and other branches stop after tests.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: production
+      cancel-in-progress: false
+    steps:
+      - name: Trigger Render deploy of this exact commit
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
+            echo "::error::Repository secret RENDER_DEPLOY_HOOK is not set"
+            exit 1
+          fi
+          curl --fail --silent --show-error -X POST "${RENDER_DEPLOY_HOOK}&ref=${GITHUB_SHA}" > /dev/null
+          echo "Deploy of ${GITHUB_SHA} requested."
+
+  smoke-test:
+    name: smoke-test
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Wait for the new SHA on the live site and check it
+        env:
+          LIVE_URL: ${{ vars.LIVE_URL }}
+        run: |
+          if [ -z "$LIVE_URL" ]; then
+            echo "::error::Repository variable LIVE_URL is not set"
+            exit 1
+          fi
+          python scripts/smoke_test.py --url "$LIVE_URL" --sha "$GITHUB_SHA" --timeout 900
