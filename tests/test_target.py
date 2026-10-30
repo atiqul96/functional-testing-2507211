@@ -87,7 +87,7 @@ class TestCelsiusToFahrenheit:
             assert result == round(result, 2)
 
     def test_fever_temperature(self):
-        assert target.celsius_to_fahrenheit(37.5) == 99.6
+        assert target.celsius_to_fahrenheit(37.5) == 99.5
 
     def test_integer_input_still_returns_float(self):
         assert type(target.celsius_to_fahrenheit(10)) is float
