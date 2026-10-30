@@ -1,14 +1,14 @@
 # Functional Testing, CI/CD and Live Deployment
 
-[![CI](https://github.com/__GITHUB_USER__/__REPO_NAME__/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/__GITHUB_USER__/__REPO_NAME__/actions/workflows/ci.yml)
+[![CI](https://github.com/atiqul96/functional-testing-2507211/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/atiqul96/functional-testing-2507211/actions/workflows/ci.yml)
 
 Functional tests, a GitHub Actions pipeline and a live web frontend for `target.py`
 (16 functions: 11 data-type, 5 mathematics). Every push is linted and tested on
 Python 3.10, 3.11 and 3.12; only a commit to `main` that passes every test is deployed,
 and a smoke test then checks the live site is serving that exact commit.
 
-**Live site:** __LIVE_URL__  
-**Health check:** __LIVE_URL__/health
+**Live site:** https://functional-testing-2507211.onrender.com  
+**Health check:** https://functional-testing-2507211.onrender.com/health
 
 ## Project layout
 
@@ -26,8 +26,8 @@ and a smoke test then checks the live site is serving that exact commit.
 ## Setup
 
 ```bash
-git clone https://github.com/__GITHUB_USER__/__REPO_NAME__.git
-cd __REPO_NAME__
+git clone https://github.com/atiqul96/functional-testing-2507211.git
+cd functional-testing-2507211
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
