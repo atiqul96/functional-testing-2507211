@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>target.py Test Bench</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --paper: #f4f1ea;
+      --card: #fffdf8;
+      --ink: #1d1b16;
+      --muted: #6b665b;
+      --line: #ddd6c6;
+      --accent: #c2410c;
+      --ok: #166534;
+      --ok-bg: #e8f3ea;
+      --err: #9f1239;
+      --err-bg: #fbe9ee;
+      --mono: "IBM Plex Mono", ui-monospace, monospace;
+      --sans: "IBM Plex Sans", system-ui, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --paper: #16150f; --card: #201e17; --ink: #efe9dc; --muted: #a39d8f;
+        --line: #36332a; --accent: #fb923c; --ok: #86efac; --ok-bg: #16281b;
+        --err: #fda4af; --err-bg: #2e1720;
+      }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); }
+    header {
+      max-width: 1180px; margin: 0 auto; padding: 40px 16px 20px;
+      display: flex; flex-wrap: wrap; gap: 16px; align-items: end; justify-content: space-between;
+      border-bottom: 2px solid var(--ink);
+    }
+    h1 { margin: 0; font-size: clamp(28px, 5vw, 44px); letter-spacing: -0.02em; line-height: 1; }
+    h1 code { font-family: var(--mono); color: var(--accent); font-weight: 600; }
+    .lede { margin: 10px 0 0; color: var(--muted); max-width: 60ch; }
+    .bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .pill {
+      font-family: var(--mono); font-size: 13px; padding: 6px 10px; border: 1px solid var(--line);
+      border-radius: 999px; background: var(--card);
+    }
+    .pill .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+      background: var(--muted); margin-right: 6px; vertical-align: 1px; }
+    .pill.live .dot { background: #22c55e; }
+    button {
+      font: 600 14px var(--sans); cursor: pointer; border: 1.5px solid var(--ink); background: var(--ink);
+      color: var(--paper); padding: 8px 14px; border-radius: 6px;
+    }
+    button.ghost { background: transparent; color: var(--ink); }
+    button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    main { max-width: 1180px; margin: 0 auto; padding: 8px 16px 40px; }
+    h2 {
+      font-family: var(--mono); font-size: 13px; text-transform: uppercase; letter-spacing: 0.12em;
+      color: var(--muted); margin: 32px 0 12px;
+    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+    .card {
+      background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .sig { font-family: var(--mono); font-weight: 600; font-size: 15px; word-break: break-word; }
+    .sig .num { color: var(--accent); margin-right: 6px; }
+    .tag { font-size: 11px; font-family: var(--mono); color: var(--muted); border: 1px solid var(--line);
+      padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
+    .desc { margin: 0; color: var(--muted); font-size: 14px; }
+    label { display: grid; gap: 4px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+    input {
+      font: 14px var(--mono); color: var(--ink); background: var(--paper); border: 1px solid var(--line);
+      border-radius: 6px; padding: 8px 10px; width: 100%;
+    }
+    .row { display: flex; gap: 8px; align-items: center; }
+    .row button { flex: none; }
+    .hint { font-size: 12px; color: var(--muted); }
+    .out {
+      font-family: var(--mono); font-size: 13px; border-radius: 6px; padding: 10px; min-height: 42px;
+      background: var(--paper); border: 1px dashed var(--line); white-space: pre-wrap; word-break: break-word;
+    }
+    .out.ok { background: var(--ok-bg); border: 1px solid transparent; color: var(--ok); }
+    .out.err { background: var(--err-bg); border: 1px solid transparent; color: var(--err); }
+    .out .k { font-weight: 600; }
+    .help { margin-top: 28px; font-size: 14px; color: var(--muted); }
+    .help code { font-family: var(--mono); color: var(--ink); }
+    footer {
+      max-width: 1180px; margin: 0 auto; padding: 18px 16px 40px; border-top: 1px solid var(--line);
+      font-family: var(--mono); font-size: 13px; color: var(--muted);
+      display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between;
+    }
+    footer strong { color: var(--ink); }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Test bench for <code>target.py</code></h1>
+      <p class="lede">Run any of the 16 functions with your own inputs. Arguments are Python literals:
+        <code>42</code>, <code>3.5</code>, <code>"text"</code>, <code>None</code>, <code>[1, 2]</code>,
+        <code>(1, 2)</code>, <code>{1, 2}</code>, <code>{"apple": 1.25}</code>.</p>
+    </div>
+    <div class="bar">
+      <span class="pill" id="health-pill"><span class="dot"></span><span id="health-text">checking…</span></span>
+      <button class="ghost" id="run-all" type="button">Run all</button>
+    </div>
+  </header>
+
+  <main>
+    {% set groups = [("Data types", ["Integer", "Float", "String", "Boolean", "None", "List", "Dictionary", "Tuple", "Set", "Date", "Type conversion"]), ("Mathematics", ["Math"])] %}
+    {% for title, cats in groups %}
+      <h2>{{ title }}</h2>
+      <div class="grid">
+      {% for name, (cat, desc, params) in functions.items() if cat in cats %}
+        <form class="card" data-fn="{{ name }}" autocomplete="off">
+          <div class="head">
+            <span class="sig"><span class="num">{{ loop.index + (11 if title == "Mathematics" else 0) }}</span>{{ name }}({{ params | map(attribute=0) | join(", ") }})</span>
+            <span class="tag">{{ cat }}</span>
+          </div>
+          <p class="desc">{{ desc }}</p>
+          {% for param, example in params %}
+            <label>{{ param }}
+              <input name="{{ param }}" value="{{ example }}" spellcheck="false" aria-label="{{ name }} {{ param }}">
+            </label>
+          {% endfor %}
+          <div class="row">
+            <button type="submit">Run</button>
+            {% if name == "greet" %}<span class="hint">Clear the box to call greet() with no argument.</span>{% endif %}
+          </div>
+          <div class="out" aria-live="polite">Result appears here.</div>
+        </form>
+      {% endfor %}
+      </div>
+    {% endfor %}
+    <p class="help">Errors are shown exactly as <code>target.py</code> raises them, e.g. try
+      <code>divide(1, 0)</code>, <code>find_max([])</code> or <code>count_vowels(5)</code>.</p>
+  </main>
+
+  <footer>
+    <span>Deployed commit: <strong id="footer-sha" data-sha="{{ sha }}">{{ sha[:7] if sha != "dev" else "dev" }}</strong></span>
+    <span><a href="/health" style="color: inherit">/health</a></span>
+  </footer>
+
+  <script>
+    async function runCard(form) {
+      const out = form.querySelector(".out");
+      const fn = form.dataset.fn;
+      let args = [...form.querySelectorAll("input")].map((i) => i.value);
+      // greet's argument is optional: an empty box means "call with no argument".
+      if (fn === "greet" && args[0].trim() === "") args = [];
+      out.className = "out";
+      out.textContent = "Running…";
+      try {
+        const res = await fetch("/api/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ function: fn, args }),
+        });
+        const data = await res.json();
+        out.textContent = "";
+        const line = (k, v) => {
+          const s = document.createElement("div");
+          const b = document.createElement("span");
+          b.className = "k"; b.textContent = k + " ";
+          s.append(b, document.createTextNode(v));
+          out.append(s);
+        };
+        if (data.call) line(">>>", data.call);
+        if (data.ok) {
+          out.classList.add("ok");
+          line("→", data.result);
+          line("type", data.type);
+        } else {
+          out.classList.add("err");
+          line(data.error + ":", data.message);
+        }
+      } catch (e) {
+        out.className = "out err";
+        out.textContent = "Could not reach the server: " + e.message;
+      }
+    }
+
+    document.querySelectorAll("form.card").forEach((form) => {
+      form.addEventListener("submit", (e) => { e.preventDefault(); runCard(form); });
+    });
+    document.getElementById("run-all").addEventListener("click", () => {
+      document.querySelectorAll("form.card").forEach(runCard);
+    });
+
+    fetch("/health").then((r) => r.json()).then((h) => {
+      document.getElementById("health-pill").classList.add("live");
+      document.getElementById("health-text").textContent = "live · " + h.sha.slice(0, 7);
+      const f = document.getElementById("footer-sha");
+      f.textContent = h.sha;
+      f.dataset.sha = h.sha;
+    }).catch(() => {
+      document.getElementById("health-text").textContent = "health check failed";
+    });
+  </script>
+</body>
+</html>
