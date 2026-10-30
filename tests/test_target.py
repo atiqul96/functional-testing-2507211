@@ -490,3 +490,233 @@ class TestToInt:
     def test_nan_raises_value_error(self):
         with pytest.raises(ValueError):
             target.to_int(math.nan)
+
+
+# ---------------------------------------------------------------------------
+# 12. divide (math)
+# ---------------------------------------------------------------------------
+class TestDivide:
+    @pytest.mark.parametrize(
+        "a, b, expected",
+        [
+            (10, 2, 5.0),
+            (7, 2, 3.5),
+            (-10, 2, -5.0),
+            (10, -2, -5.0),
+            (-10, -2, 5.0),
+            (0, 5, 0.0),
+            (5, 1, 5.0),
+            (1, 4, 0.25),
+            (2.5, 0.5, 5.0),
+        ],
+    )
+    def test_exact_results(self, a, b, expected):
+        result = target.divide(a, b)
+        assert result == expected
+        assert type(result) is float  # true division, never int
+
+    @pytest.mark.parametrize(
+        "a, b, expected",
+        [(1, 3, 0.3333333333), (2, 3, 0.6666666667), (0.1, 0.3, 0.3333333333)],
+    )
+    def test_inexact_results(self, a, b, expected):
+        assert target.divide(a, b) == pytest.approx(expected)
+
+    def test_tiny_divisor(self):
+        assert target.divide(1, 1e-10) == pytest.approx(1e10)
+
+    @pytest.mark.parametrize("a", [0, 1, -1, 2.5])
+    @pytest.mark.parametrize("b", [0, 0.0, -0.0, False])
+    def test_divide_by_zero_raises(self, a, b):
+        with pytest.raises(ZeroDivisionError, match=r"^cannot divide by zero$"):
+            target.divide(a, b)
+
+    @pytest.mark.parametrize("a, b", [("10", 2), (10, "2"), (None, 1), ([1], 1)])
+    def test_wrong_types_raise_type_error(self, a, b):
+        with pytest.raises(TypeError):
+            target.divide(a, b)
+
+
+# ---------------------------------------------------------------------------
+# 13. power (math)
+# ---------------------------------------------------------------------------
+class TestPower:
+    @pytest.mark.parametrize(
+        "base, exponent, expected",
+        [
+            (2, 3, 8),
+            (2, 0, 1),  # anything to the 0 is 1
+            (0, 0, 1),  # Python defines 0 ** 0 as 1
+            (0, 5, 0),
+            (1, 1000, 1),
+            (5, 1, 5),
+            (-2, 3, -8),  # negative base, odd exponent
+            (-2, 2, 4),  # negative base, even exponent
+            (10, 6, 1_000_000),
+            (2, 100, 2**100),
+        ],
+    )
+    def test_integer_results(self, base, exponent, expected):
+        result = target.power(base, exponent)
+        assert result == expected
+        assert type(result) is int
+
+    @pytest.mark.parametrize(
+        "base, exponent, expected",
+        [(2, -1, 0.5), (2, -2, 0.25), (4, 0.5, 2.0), (2.0, 3, 8.0), (9, 0.5, 3.0)],
+    )
+    def test_float_results(self, base, exponent, expected):
+        result = target.power(base, exponent)
+        assert result == expected
+        assert type(result) is float
+
+    def test_inexact_result(self):
+        assert target.power(2, 0.5) == pytest.approx(math.sqrt(2))
+
+    def test_negative_base_fractional_exponent_gives_complex(self):
+        result = target.power(-8, 1 / 3)
+        assert type(result) is complex
+        assert result == pytest.approx(complex(1, math.sqrt(3)))
+
+    def test_zero_to_negative_power_raises(self):
+        # Suspected bug: not handled, Python's own ZeroDivisionError leaks out.
+        with pytest.raises(ZeroDivisionError):
+            target.power(0, -1)
+
+    def test_float_overflow_raises(self):
+        with pytest.raises(OverflowError):
+            target.power(10.0, 400)
+
+    @pytest.mark.parametrize("base, exponent", [("2", 3), (2, "3"), (None, 2)])
+    def test_wrong_types_raise_type_error(self, base, exponent):
+        with pytest.raises(TypeError):
+            target.power(base, exponent)
+
+
+# ---------------------------------------------------------------------------
+# 14. square_root (math)
+# ---------------------------------------------------------------------------
+class TestSquareRoot:
+    @pytest.mark.parametrize(
+        "x, expected",
+        [(0, 0.0), (1, 1.0), (4, 2.0), (9, 3.0), (16, 4.0), (0.25, 0.5), (1e10, 1e5)],
+    )
+    def test_perfect_squares(self, x, expected):
+        result = target.square_root(x)
+        assert result == expected
+        assert type(result) is float
+
+    @pytest.mark.parametrize("x, expected", [(2, 1.41421356), (3, 1.73205081), (0.5, 0.70710678)])
+    def test_inexact_roots(self, x, expected):
+        assert target.square_root(x) == pytest.approx(expected)
+
+    def test_tiny_positive(self):
+        assert target.square_root(1e-10) == pytest.approx(1e-5)
+
+    def test_negative_zero_is_allowed(self):
+        assert target.square_root(-0.0) == 0.0
+
+    def test_result_squared_gives_input(self):
+        for x in [2, 7, 123.456]:
+            assert target.square_root(x) ** 2 == pytest.approx(x)
+
+    @pytest.mark.parametrize("x", [-1, -0.0001, -4, -1e10])
+    def test_negative_raises(self, x):
+        with pytest.raises(ValueError, match=r"^cannot take the square root of a negative number$"):
+            target.square_root(x)
+
+    @pytest.mark.parametrize("bad", ["4", None, [4]])
+    def test_wrong_type_raises_type_error(self, bad):
+        with pytest.raises(TypeError):
+            target.square_root(bad)
+
+
+# ---------------------------------------------------------------------------
+# 15. factorial (math)
+# ---------------------------------------------------------------------------
+class TestFactorial:
+    @pytest.mark.parametrize(
+        "n, expected",
+        [
+            (0, 1),  # boundary: 0! is 1
+            (1, 1),
+            (2, 2),
+            (3, 6),
+            (4, 24),
+            (5, 120),
+            (10, 3_628_800),
+            (20, 2_432_902_008_176_640_000),
+        ],
+    )
+    def test_values(self, n, expected):
+        result = target.factorial(n)
+        assert result == expected
+        assert type(result) is int
+
+    def test_matches_math_factorial(self):
+        for n in range(0, 30):
+            assert target.factorial(n) == math.factorial(n)
+
+    def test_large_value_is_exact(self):
+        assert target.factorial(50) == math.factorial(50)
+
+    @pytest.mark.parametrize("n", [-1, -2, -100])
+    def test_negative_raises(self, n):
+        with pytest.raises(ValueError, match=r"^factorial is not defined for negative numbers$"):
+            target.factorial(n)
+
+    @pytest.mark.parametrize("n", [2.5, 3.0])
+    def test_float_raises_type_error(self, n):
+        with pytest.raises(TypeError):
+            target.factorial(n)
+
+    @pytest.mark.parametrize("bad", ["5", None])
+    def test_wrong_type_raises_type_error(self, bad):
+        with pytest.raises(TypeError):
+            target.factorial(bad)
+
+
+# ---------------------------------------------------------------------------
+# 16. average (math)
+# ---------------------------------------------------------------------------
+class TestAverage:
+    @pytest.mark.parametrize(
+        "numbers, expected",
+        [
+            ([5], 5.0),  # single element
+            ([1, 2, 3], 2.0),
+            ([1, 2], 1.5),
+            ([0, 0, 0], 0.0),
+            ([-1, 1], 0.0),
+            ([-2, -4], -3.0),
+            ([2.5, 3.5], 3.0),
+            ([10, 20, 30, 40], 25.0),
+            ([10**6, 10**6], 1_000_000.0),
+        ],
+    )
+    def test_exact_averages(self, numbers, expected):
+        result = target.average(numbers)
+        assert result == expected
+        assert type(result) is float
+
+    @pytest.mark.parametrize("numbers, expected", [([1, 2, 2], 1.6666666667), ([0.1, 0.2], 0.15)])
+    def test_inexact_averages(self, numbers, expected):
+        assert target.average(numbers) == pytest.approx(expected)
+
+    def test_works_with_tuple(self):
+        assert target.average((2, 4)) == 3.0
+
+    def test_does_not_modify_list(self):
+        numbers = [1, 2, 3]
+        target.average(numbers)
+        assert numbers == [1, 2, 3]
+
+    @pytest.mark.parametrize("empty", [[], ()])
+    def test_empty_raises(self, empty):
+        with pytest.raises(ValueError, match=r"^list is empty$"):
+            target.average(empty)
+
+    @pytest.mark.parametrize("bad", [None, 5, ["1", "2"]])
+    def test_wrong_type_raises_type_error(self, bad):
+        with pytest.raises(TypeError):
+            target.average(bad)
